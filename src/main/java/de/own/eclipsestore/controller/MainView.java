@@ -4,14 +4,18 @@ import java.time.Duration;
 import java.time.Instant;
 import java.util.ArrayList;
 import java.util.List;
+import java.util.Random;
 
+import com.vaadin.flow.component.Component;
 import com.vaadin.flow.component.button.Button;
 import com.vaadin.flow.component.notification.Notification;
 import com.vaadin.flow.component.orderedlayout.HorizontalLayout;
 import com.vaadin.flow.component.orderedlayout.VerticalLayout;
 import com.vaadin.flow.router.Route;
 
+import de.own.eclipsestore.entity.Author;
 import de.own.eclipsestore.entity.Book;
+import de.own.eclipsestore.entity.Relation;
 import de.own.eclipsestore.service.FakerService;
 import de.own.eclipsestore.service.MyService;
 
@@ -45,10 +49,21 @@ public class MainView extends VerticalLayout {
 
         Button generateAuthor = new Button("generateAuthor");
         generateAuthor.addClickListener(click -> {
-            for (int i = 0; i < 800000; i++) {
-                myService.createAuthor(fakerService.createAuthor());
+            Instant start = Instant.now();
+            for (int i = 0; i < 800; i++) {
+                List<Author> authors = new ArrayList<>();
+                for (int j = 0; j < 1000; j++) {
+                    Author b = fakerService.createAuthor();
+                    authors.add(b);
+                }
+                myService.createAuthors(authors);
             }
-            Notification.show("100 authors should be generated");
+            Instant end = Instant.now();
+            Duration timeElapsed = Duration.between(start, end);
+            Notification.show(
+                    "800000 authors should be generated. " + "Time taken: " + timeElapsed.toMillis() + " milliseconds");
+            System.out.println(
+                    "800000 authors should be generated" + "Time taken: " + timeElapsed.toMillis() + " milliseconds");
         });
 
         Button generateAdress = new Button("generateAdress");
@@ -82,8 +97,60 @@ public class MainView extends VerticalLayout {
             Notification.show(count + "authors found");
         });
 
-        add(new HorizontalLayout(generateAdress, generateAuthor, generateBook),
-                new HorizontalLayout(countAdress, countAuthor, countBook));
+        Button countRelation = new Button("countRelation", e -> {
+            long count = myService.data().getRelationRoot().stream().count();
+            Notification.show(count + "relations found");
+        });
+
+        Button generateRelationAuthorBook = new Button("generateRelationAuthorBook", c -> {
+            long countA = myService.data().getAuthorRoot().stream().count();
+            long countB = myService.data().getBookRoot().stream().count();
+
+            if (countA > 0 && countB > 0) {
+                Random r = new Random();
+                int low = 0;
+                Instant start = Instant.now();
+                for (int i = 0; i < 100; i++) {
+                    List<Relation> relations = new ArrayList<>();
+                    for (int j = 0; j < 1000; j++) {
+                        Relation relation = new Relation();
+                        relation.setObj1(myService.data().getAuthorRoot().get(r.nextInt((int) (countA - low)) + low));
+                        relation.setObj2(myService.data().getBookRoot().get(r.nextInt((int) (countB - low)) + low));
+                        relations.add(relation);
+                    }
+                    myService.createRelations(relations);
+                }
+                Instant end = Instant.now();
+                Duration timeElapsed = Duration.between(start, end);
+                Notification.show(
+                        "100000 relations should be generated. " + "Time taken: " + timeElapsed.toMillis()
+                                + " milliseconds");
+                System.out.println(
+                        "100000 relations should be generated" + "Time taken: " + timeElapsed.toMillis()
+                                + " milliseconds");
+            } else {
+                Notification.show("Authors or Books are empty, relation cannot be generated");
+            }
+        });
+        Button deleteAdress = new Button("deleteAdress", e -> {
+            myService.deleteAllAdress();
+        });
+        Button deleteAuthor = new Button("deleteAuthor", e -> {
+            myService.deleteAllAuthor();
+        });
+        Button deleteBook = new Button("deleteBook", e -> {
+            myService.deleteAllBook();
+        });
+        Button deleteRelation = new Button("deleteRelation", e -> {
+            myService.deleteAllRelation();
+        });
+
+        Button countBooksHavingMultipleAuthor = new Button("countBooksHavingMultipleAuthor", e->{
+            Notification.show("Books having multiple Author by relation: "+myService.getBooksHavingMultipleAuthor().size());
+        });
+        add(new HorizontalLayout(generateAdress, generateAuthor, generateBook, generateRelationAuthorBook),
+                new HorizontalLayout(countAdress, countAuthor, countBook, countRelation, countBooksHavingMultipleAuthor),
+                new HorizontalLayout(deleteAdress, deleteAuthor, deleteBook, deleteRelation));
 
     }
 }

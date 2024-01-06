@@ -2,7 +2,10 @@ package de.own.eclipsestore.service;
 
 import java.time.Duration;
 import java.time.Instant;
+import java.util.ArrayList;
+import java.util.HashMap;
 import java.util.List;
+import java.util.Map;
 import java.util.stream.Collectors;
 
 import org.eclipse.store.storage.embedded.configuration.types.EmbeddedStorageConfiguration;
@@ -145,6 +148,28 @@ public class MyService {
                         + timeElapsed.toMillis() + " milliseconds");
     }
 
+    public void createAuthors(List<Author> item) {
+        Instant start = Instant.now();
+        data().getAuthorRoot().addAll(item);
+        storageManager.store(data().getAuthorRoot());// data will be saved after restart server
+        Instant end = Instant.now();
+        Duration timeElapsed = Duration.between(start, end);
+        System.out.println(
+                "1000 authorss in chunk should be saved by eclipsestore" + "Time taken for only saving: "
+                        + timeElapsed.toMillis() + " milliseconds");
+    }
+
+    public void createRelations(List<Relation> item) {
+        Instant start = Instant.now();
+        data().getRelationRoot().addAll(item);
+        storageManager.store(data().getRelationRoot());// data will be saved after restart server
+        Instant end = Instant.now();
+        Duration timeElapsed = Duration.between(start, end);
+        System.out.println(
+                "1000 Relations in chunk should be saved by eclipsestore" + "Time taken for only saving: "
+                        + timeElapsed.toMillis() + " milliseconds");
+    }
+
     public void createRelation(Relation item) {
         data().getRelationRoot().add(item);
         storageManager.storeRoot();
@@ -186,14 +211,106 @@ public class MyService {
 
     // how many book have more than one author?
     public List<Book> getBooksHavingMultipleAuthor() {
-        return data().getBookRoot().stream().filter(b -> {
-            List<Relation> currentBookRelations = data().getRelationRoot().stream()
-                    .filter(r -> r.getObj1().equals(b) || r.getObj2().equals(b)).collect(Collectors.toList());
-            if (currentBookRelations.size() > 0) {
-                return true;
-            }
-            return false;
-        }).collect(Collectors.toList());
+        // return data().getBookRoot().stream().filter(b -> {
+        // List<Relation> currentBookRelations = data().getRelationRoot().stream()
+        // .filter(r -> r.getObj1().equals(b) ||
+        // r.getObj2().equals(b)).collect(Collectors.toList());
+        // if (currentBookRelations.size() > 0) {
+        // return true;
+        // }
+        // return false;
+        // }).collect(Collectors.toList());
 
+        // List<Relation> relationsList = data().getBookRoot().stream()
+        // .flatMap(book -> data().getRelationRoot().stream()
+        // .filter(relation -> relation.getObj1().equals(book) ||
+        // relation.getObj2().equals(book)))
+        // .collect(Collectors.toList());
+        // List<Book> booksWithMultipleRelations = relationsList.stream()
+        // .flatMap(relation -> {
+        // if (relation.getObj1() instanceof Book) {
+        // return Stream.of((Book) relation.getObj1());
+        // } else if (relation.getObj2() instanceof Book) {
+        // return Stream.of((Book) relation.getObj2());
+        // } else {
+        // throw new IllegalArgumentException("Relation cannot be null or contain
+        // non-Book objects");
+        // }
+        // })
+        // .distinct()
+        // .collect(Collectors.toList());
+        // return booksWithMultipleRelations;
+
+        // working version, quite fast, not sure if result if correct , may be, may be not
+        Map<Book, Integer> occurrenceCountMap = new HashMap<>();
+
+        for (Relation relation : data().getRelationRoot()) {
+            Object obj1 = relation.getObj1();
+            Object obj2 = relation.getObj2();
+
+            if (obj1 instanceof Book) {
+                Book book = (Book) obj1;
+                if (occurrenceCountMap.containsKey(obj1)) {
+                    int occurrenceCount = occurrenceCountMap.get(obj1);
+                    occurrenceCountMap.put(book, occurrenceCount + 1);
+                } else {
+                    occurrenceCountMap.put(book, 1);
+                }
+            }
+            if (obj2 instanceof Book) {
+                Book book = (Book) obj2;
+                if (occurrenceCountMap.containsKey(obj2)) {
+                    int occurrenceCount = occurrenceCountMap.get(obj2);
+                    occurrenceCountMap.put(book, occurrenceCount + 1);
+                } else {
+                    occurrenceCountMap.put(book, 1);
+                }
+            }
+
+        }
+
+        List<Book> objectsWithMultipleRelations = new ArrayList<>();
+
+        for (Book obj : occurrenceCountMap.keySet()) {
+            if (occurrenceCountMap.get(obj) > 1) {
+                objectsWithMultipleRelations.add(obj);
+            }
+        }
+
+        return objectsWithMultipleRelations;
+
+        // burn computer and slow....
+        // List<Book> objectsWithMultipleRelations = data().getRelationRoot().stream()
+        // .flatMap(relation -> Stream.of(relation.getObj1(), relation.getObj2()))
+        // .filter(object -> object instanceof Book)
+        // .distinct()
+        // .collect(Collectors.toSet())
+        // .stream()
+        // .filter(book -> data().getRelationRoot().stream()
+        // .filter(relation -> relation.getObj1() == book || relation.getObj2() == book)
+        // .count() > 1)
+        // .map(o -> (Book) o)
+        // .collect(Collectors.toList());
+        // return objectsWithMultipleRelations;
+    }
+
+    public void deleteAllAuthor() {
+        data().getAuthorRoot().clear();
+        storageManager.store(data().getAuthorRoot());
+    }
+
+    public void deleteAllBook() {
+        data().getBookRoot().clear();
+        storageManager.store(data().getBookRoot());
+    }
+
+    public void deleteAllAdress() {
+        data().getAdressRoot().clear();
+        storageManager.store(data().getAdressRoot());
+    }
+
+    public void deleteAllRelation() {
+        data().getRelationRoot().clear();
+        storageManager.store(data().getRelationRoot());
     }
 }
