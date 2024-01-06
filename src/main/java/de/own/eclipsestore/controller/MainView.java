@@ -6,7 +6,6 @@ import java.util.ArrayList;
 import java.util.List;
 import java.util.Random;
 
-import com.vaadin.flow.component.Component;
 import com.vaadin.flow.component.button.Button;
 import com.vaadin.flow.component.notification.Notification;
 import com.vaadin.flow.component.orderedlayout.HorizontalLayout;
@@ -16,6 +15,7 @@ import com.vaadin.flow.router.Route;
 import de.own.eclipsestore.entity.Author;
 import de.own.eclipsestore.entity.Book;
 import de.own.eclipsestore.entity.Relation;
+import de.own.eclipsestore.service.ExcelService;
 import de.own.eclipsestore.service.FakerService;
 import de.own.eclipsestore.service.MyService;
 
@@ -24,10 +24,12 @@ public class MainView extends VerticalLayout {
 
     private MyService myService;
     private FakerService fakerService;
+    private ExcelService excelService;
 
-    public MainView(MyService myService, FakerService fakerService) {
+    public MainView(MyService myService, FakerService fakerService, ExcelService excelService) {
         this.myService = myService;
         this.fakerService = fakerService;
+        this.excelService = excelService;
         Button generateBook = new Button("generateBook");
         generateBook.addClickListener(click -> {
             Instant start = Instant.now();
@@ -145,12 +147,18 @@ public class MainView extends VerticalLayout {
             myService.deleteAllRelation();
         });
 
-        Button countBooksHavingMultipleAuthor = new Button("countBooksHavingMultipleAuthor", e->{
-            Notification.show("Books having multiple Author by relation: "+myService.getBooksHavingMultipleAuthor().size());
+        Button countBooksHavingMultipleAuthor = new Button("countBooksHavingMultipleAuthor", e -> {
+            Notification.show(
+                    "Books having multiple Author by relation: " + myService.getBooksHavingMultipleAuthor().size());
+        });
+        Button writeExcel = new Button("writeExcel", c -> {
+            excelService.writeToExcel();
         });
         add(new HorizontalLayout(generateAdress, generateAuthor, generateBook, generateRelationAuthorBook),
-                new HorizontalLayout(countAdress, countAuthor, countBook, countRelation, countBooksHavingMultipleAuthor),
-                new HorizontalLayout(deleteAdress, deleteAuthor, deleteBook, deleteRelation));
+                new HorizontalLayout(countAdress, countAuthor, countBook, countRelation,
+                        countBooksHavingMultipleAuthor),
+                new HorizontalLayout(deleteAdress, deleteAuthor, deleteBook, deleteRelation),
+                new HorizontalLayout(writeExcel));
 
     }
 }
