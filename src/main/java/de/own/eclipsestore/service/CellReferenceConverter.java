@@ -47,8 +47,8 @@ public class CellReferenceConverter {
                 number += c;
             }
         }
-        System.out.println("Alphabet: " + alphabet);
-        System.out.println("Number: " + number);
+        // System.out.println("Alphabet: " + alphabet);
+        // System.out.println("Number: " + number);
         return alphabet.toUpperCase() + "-" + number;
     }
 
